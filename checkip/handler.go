@@ -15,6 +15,7 @@ type IPInfo struct {
 	ACL      dbs.ACL
 	ROUTE    dbs.ACL
 	Route	 string `json:"route"`
+	IsBanned bool
 }
 
 func (this *IPInfo) GetIP(ip string) {
@@ -46,7 +47,8 @@ func (this *IPInfo) getNetmask() {
 	}
 }
 
-func (this *IPInfo) GetACL() dbs.ACL {
+func (this *IPInfo) GetACL(seq int) dbs.ACL {
+	this.ACL.SEQ = seq
 	this.ACL.ACLAction = "permit"
 	this.ACL.Protocol = "ip"
 	this.ACL.SourceIP = dbs.FormatIP(this.IP)
@@ -56,7 +58,8 @@ func (this *IPInfo) GetACL() dbs.ACL {
 	return this.ACL
 }
 
-func (this *IPInfo) GetRoute() dbs.ACL {
+func (this *IPInfo) GetRoute(seq int) dbs.ACL {
+	this.ROUTE.SEQ = seq
 	this.ROUTE.ACLAction = "permit"
 	this.ROUTE.Protocol = "ip"
 	this.ROUTE.SourceIP = "any"
@@ -75,6 +78,7 @@ func (this *IPInfo) getInfo() {
 	this.getPrefix(ip_info.RangeIP)
 	this.getNetmask()
 	this.Gateway = ip_info.Gateway
+	this.IsBanned = ip_info.IsRouteBanned && ip_info.IsACLBanned
 }
 
 func (this *IPInfo) CheckIP() {

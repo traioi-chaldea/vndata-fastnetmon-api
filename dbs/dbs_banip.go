@@ -4,41 +4,32 @@ import (
 	"github.com/TraiOi/util"
 )
 
-func checkIPFromROUTE(ip string) bool {
-	check := false
-	routes_list := getInfo("ROUTE")
-	for _, v := range routes_list {
-		if v["network"] == FormatIP(ip) {
-			check = true
-			util.WarningLogger.Print("IP '", ip, "' is existed from ROUTE '", v["vrf"], "'")
-			break
-		}
-	}
-	return check
-}
-
-func checkIPFromACL(ip string) bool {
-	check := false
-	acls_list := getInfo("ACL")
-	for _, v := range acls_list {
-		if v["source_ip"] == FormatIP(ip) {
-			check = true
-			util.WarningLogger.Print("IP '", ip, "' is existed from ACL '", v["acl"], "'")
-		break
-		}
-	}
-	return check
-}
-
-func CheckIP(ip string) bool {
-	var check bool
-	checkACL   := checkIPFromACL(ip)
-	checkROUTE := checkIPFromROUTE(ip)
-	if checkACL && checkROUTE {
-		check = true
+func banIPtoACL(content ACL) bool {
+	var result bool
+	col := DB.Collection("ACL")
+	if _, err := col.InsertOne(ctx, content); err != nil {
+		util.ErrorLogger.Print(err)
+		result = false
 	} else {
-		check = false
+		util.InfoLogger.Print("ACL: Banned success")
+		result = true
 	}
-	return check
+	return result
 }
 
+func banIPtoROUTE(content ACL) bool {
+	var result bool
+	col := DB.Collection("ROUTE")
+	if _, err := col.InsertOne(ctx, content); err != nil {
+		util.ErrorLogger.Print(err)
+		result = false
+	} else {
+		util.InfoLogger.Print("ROUTE: Banned success")
+		result = true
+	}
+	return result
+}
+
+func BanIP(acl ACL, route ACL) bool {
+	return banIPtoACL(acl) && banIPtoROUTE(route)
+}

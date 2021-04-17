@@ -5,15 +5,18 @@ import (
 	"os"
 	"github.com/TraiOi/util"
 	"github.com/yl2chen/cidranger"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 type IPInfo struct {
-	IP      string `json:"ip"`
-	RangeIP string `json:"range_ip"`
-	Gateway string `json:"gateway"`
-	VLAN    string `json:"vlan"`
-	ACL	string `json:"acl"`
-	Route   string `json:"route"`
+	IP            string `json:"ip"`
+	RangeIP       string `json:"range_ip"`
+	Gateway       string `json:"gateway"`
+	VLAN          string `json:"vlan"`
+	ACL	      string `json:"acl"`
+	Route         string `json:"route"`
+	IsRouteBanned bool   `json:"isroutebanned"`
+	IsACLBanned   bool   `json:"isaclbanned"`
 }
 
 func FindIPInfo(ip string) IPInfo {
@@ -38,6 +41,8 @@ func FindIPInfo(ip string) IPInfo {
 			result.Gateway = v["gateway"].(string)
 			result.ACL = v["acl"].(string)
 			result.Route = v["route"].(string)
+			result.IsRouteBanned = checkIsRouteBanned(ip)
+			result.IsACLBanned = checkIsACLBanned(ip)
 			break
 		}
 		ranger.Remove(*tmp)
@@ -49,3 +54,30 @@ func FindIPInfo(ip string) IPInfo {
 	return result
 }
 
+func checkIsRouteBanned(ip string) bool {
+	var err error
+	var tmp bson.M
+
+	col  := DB.Collection("ROUTE")
+	ip32 := FormatIP(ip)
+
+	if err = col.FindOne(ctx, bson.M{"dest_ip": ip32}).Decode(&tmp); err != nil {
+	    util.ErrorLogger.Print(err)
+	}
+
+	return !util.IsNil(tmp)
+}
+
+func checkIsACLBanned(ip string) bool {
+	var err	error
+	var tmp bson.M
+
+	col  := DB.Collection("ACL")
+	ip32 := FormatIP(ip)
+
+	if err = col.FindOne(ctx, bson.M{"source_ip": ip32}).Decode(&tmp); err != nil {
+	    util.ErrorLogger.Print(err)
+	}
+
+	return !util.IsNil(tmp)
+}

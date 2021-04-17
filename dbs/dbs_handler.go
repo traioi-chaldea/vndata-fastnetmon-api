@@ -30,3 +30,7 @@ func FormatIP(ip string) string {
 func GetSWInfo() interface{} {
 	return getInfo("SW_INFO")
 }
+
+func GetAPIInfo() interface{} {
+	return getInfo("API_INFO")[0]
+}
